@@ -1,0 +1,86 @@
+version: '2'
+services:
+
+  ################################################################################
+  # LOAD BALANCER FOR API
+  ################################################################################
+
+  lb:
+    image: dockercloud/haproxy:latest
+    container_name: heat-hap
+    links:
+      - web
+      - api
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 80:80
+    environment:
+      - BALANCE=roundrobin
+
+  ################################################################################
+  # RABBITMQ
+  ################################################################################
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "9002:15672"
+      - "5672:5672"
+
+  ################################################################################
+  # ELASTICSEARCH
+  ################################################################################
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.2.1
+    container_name: share_nonprod_elasticsearch
+    ports:
+      - "9200:9200"
+    restart: unless-stopped
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "MAX_MAP_COUNT=262144"
+      - "cluster.name=share-docker-cluster"
+      - "bootstrap.memory_lock=true"
+      - "xpack.security.enabled=false"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: 1g
+    cap_add:
+      - IPC_LOCK
+
+  ################################################################################
+  # API 
+  ################################################################################
+
+  api:
+    build: api/.
+    environment:
+      - "VIRTUAL_HOST=*/api/*"
+      - "VIRTUAL_HOST_WEIGHT=1"
+    env_file: development.env
+    hostname: "api.pesto.local"
+    depends_on:
+      - lb
+      - rabbitmq
+      - elasticsearch
+    expose:
+      - 80
+
+  ################################################################################
+  # WORKER
+  ################################################################################
+
+  worker:
+    build: worker/.
+    env_file: development.env
+    depends_on:
+      - api

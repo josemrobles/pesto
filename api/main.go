@@ -25,10 +25,10 @@ var (
 	message      string
 	data json.RawMessage
 	apiToken     string = "zAZ7EtwfqYxJt8eKBRf9xfs8SQk3F4Hv22Wt29k6nchMDpeknGFhkMQeDhxBDEWS45E3dhkQNKTXqq97qCJeCZzEt3kkBfEPAC5X"
-	//rmq      = conejo.Connect("amqp://guest:guest@rabbitmq:5672")
-	//workQueue = make(chan string) 
-	//queue    = conejo.Queue{Name: "queue_name", Durable: false, Delete: false, Exclusive: false, NoWait: false}
-	//exchange = conejo.Exchange{Name: "exchange_name", Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
+	rmq      = conejo.Connect("amqp://guest:guest@rabbitmq:5672")
+	workQueue = make(chan string) 
+	queue    = conejo.Queue{Name: "queue_name", Durable: false, Delete: false, Exclusive: false, NoWait: false}
+	exchange = conejo.Exchange{Name: "exchange_name", Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 )
 
 func main() {
@@ -130,8 +130,6 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	} else {
 
 		// Publish the message
-		print(string([]byte(b)))
-/*
 		err := conejo.Publish(rmq, queue, exchange, string([]byte(b)))
 
 		// Check to make sure the there were no errors in publishing
@@ -144,7 +142,7 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			log.Printf("ERR: Could not publish message - %q", err)
 
 		}  // Publish Message
-*/
+
 	} // Read payload
 
 	// By this point we should have some sort of response

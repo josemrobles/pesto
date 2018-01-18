@@ -7,9 +7,8 @@ services:
 
   lb:
     image: dockercloud/haproxy:latest
-    container_name: heat-hap
+    container_name: pesto-hap
     links:
-      - web
       - api
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -34,7 +33,7 @@ services:
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:5.2.1
-    container_name: share_nonprod_elasticsearch
+    container_name: elasticsearch
     ports:
       - "9200:9200"
     restart: unless-stopped
@@ -68,8 +67,9 @@ services:
       - "VIRTUAL_HOST_WEIGHT=1"
     env_file: development.env
     hostname: "api.pesto.local"
+    links:
+      - rabbitmq
     depends_on:
-      - lb
       - rabbitmq
       - elasticsearch
     expose:
@@ -79,8 +79,8 @@ services:
   # WORKER
   ################################################################################
 
-  worker:
-    build: worker/.
-    env_file: development.env
-    depends_on:
-      - api
+#  worker:
+#    build: worker/.
+#    env_file: development.env
+#    depends_on:
+#      - api

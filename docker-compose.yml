@@ -22,7 +22,7 @@ services:
   ################################################################################
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3.6-management-alpine
     ports:
       - "9002:15672"
       - "5672:5672"
@@ -71,7 +71,6 @@ services:
       - rabbitmq
     depends_on:
       - rabbitmq
-      - elasticsearch
     expose:
       - 80
 
@@ -79,8 +78,11 @@ services:
   # WORKER
   ################################################################################
 
-#  worker:
-#    build: worker/.
-#    env_file: development.env
-#    depends_on:
-#      - api
+  worker:
+    build: worker/.
+    env_file: development.env
+    links:
+      - rabbitmq
+      - elasticsearch
+    depends_on:
+      - api

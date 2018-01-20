@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
-	_"github.com/josemrobles/conejo"
+	"github.com/josemrobles/conejo"
 	"log"
 	"net/http"
 	"io/ioutil"
@@ -19,16 +19,15 @@ type Response struct {
 const port = ":80"
 
 var (
+	rmq      = conejo.Connect("amqp://guest:guest@rabbitmq:5672")
+	queue    = conejo.Queue{Name: "queue_name", Durable: false, Delete: false, Exclusive: false, NoWait: false}
+	exchange = conejo.Exchange{Name: "exchange_name", Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 	foobar       string = `{"Success": false,"Message": "Internal server error :(","Data": {"foo": "bar"}}`
 	success      bool   = false
 	responseCode int    = 500
 	message      string
 	data json.RawMessage
 	apiToken     string = "zAZ7EtwfqYxJt8eKBRf9xfs8SQk3F4Hv22Wt29k6nchMDpeknGFhkMQeDhxBDEWS45E3dhkQNKTXqq97qCJeCZzEt3kkBfEPAC5X"
-	rmq      = conejo.Connect("amqp://guest:guest@rabbitmq:5672")
-	workQueue = make(chan string) 
-	queue    = conejo.Queue{Name: "queue_name", Durable: false, Delete: false, Exclusive: false, NoWait: false}
-	exchange = conejo.Exchange{Name: "exchange_name", Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 )
 
 func main() {
@@ -97,11 +96,13 @@ func AuthCheck(h httprouter.Handle) httprouter.Handle {
 
 			// Valid token, move along
 			h(w, r, ps)
+			log.Println("OOF: Request accepted.")
 
 		} else {
 
 			// Bad token, respond with unauthorized
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			log.Println("OOF: Request submitted with invalid token.")
 
 		} // Token check
 
@@ -135,13 +136,20 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		// Check to make sure the there were no errors in publishing
 		if err != nil {
 
-			// Foobar
+			// Foobar no wascally wabbits!!
 			success = false
 			responseCode = 500
 			message = "Internal Error :("
 			log.Printf("ERR: Could not publish message - %q", err)
 
-		}  // Publish Message
+		} else {
+
+			success = true
+			responseCode = 202 // Accepted
+			data = json.RawMessage(`{"hooty":"hoot"}`)
+			message = "Payload Accepted, check status of the request va the request ID"
+
+		} // Publish Message
 
 	} // Read payload
 

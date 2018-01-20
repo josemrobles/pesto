@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/julienschmidt/httprouter"
 	"github.com/josemrobles/conejo"
+	"github.com/julienschmidt/httprouter"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"io/ioutil"
 	"os"
 )
 
@@ -20,14 +20,14 @@ type Response struct {
 const port = ":80"
 
 var (
-	rmq      = conejo.Connect(os.Getenv("RABBITMQ_CONNECTION"))
-	queue    = conejo.Queue{Name: os.Getenv("RABBITMQ_QUEUE"), Durable: false, Delete: false, Exclusive: false, NoWait: false}
-	exchange = conejo.Exchange{Name: os.Getenv("RABBITMQ_EXCHANGE"), Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
+	rmq                 = conejo.Connect(os.Getenv("RABBITMQ_CONNECTION"))
+	queue               = conejo.Queue{Name: os.Getenv("RABBITMQ_QUEUE"), Durable: false, Delete: false, Exclusive: false, NoWait: false}
+	exchange            = conejo.Exchange{Name: os.Getenv("RABBITMQ_EXCHANGE"), Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 	foobar       string = `{"Success": false,"Message": "Internal server error :(","Data": {"foo": "bar"}}`
 	success      bool   = false
 	responseCode int    = 500
 	message      string
-	data json.RawMessage
+	data         json.RawMessage
 	apiToken     string = string(os.Getenv("API_TOKEN"))
 )
 

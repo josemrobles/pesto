@@ -2,20 +2,20 @@ package main
 
 import (
 	"github.com/josemrobles/conejo"
-	"runtime"
-	"os"
 	"log"
+	"os"
+	"runtime"
 )
 
 var (
-	rmq      = conejo.Connect(os.Getenv("RABBITMQ_CONNECTION"))
-	workQueue = make(chan string) 
-	queue    = conejo.Queue{Name: os.Getenv("RABBITMQ_QUEUE"), Durable: false, Delete: false, Exclusive: false, NoWait: false}
-	exchange = conejo.Exchange{Name: os.Getenv("RABBITMQ_EXCHANGE"), Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
+	rmq       = conejo.Connect(os.Getenv("RABBITMQ_CONNECTION"))
+	workQueue = make(chan string)
+	queue     = conejo.Queue{Name: os.Getenv("RABBITMQ_QUEUE"), Durable: false, Delete: false, Exclusive: false, NoWait: false}
+	exchange  = conejo.Exchange{Name: os.Getenv("RABBITMQ_EXCHANGE"), Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 )
 
 /* ----------------------------------------------------------------------------
-Init func launches the goroutines which do the concurrent processing of the 
+Init func launches the goroutines which do the concurrent processing of the
 messages which are received via wabbitMQ.
 -----------------------------------------------------------------------------*/
 func init() {
@@ -23,7 +23,7 @@ func init() {
 	// Lanch N goroutines based on number of cores.
 	for i := 0; i < runtime.NumCPU(); i++ {
 
-		log.Printf("OOF - launching sub-worker %v",i+1)
+		log.Printf("OOF - launching sub-worker %v", i+1)
 		go asyncProcessor(workQueue)
 
 	}

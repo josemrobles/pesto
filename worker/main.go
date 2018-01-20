@@ -3,14 +3,15 @@ package main
 import (
 	"github.com/josemrobles/conejo"
 	"runtime"
+	"os"
 	"log"
 )
 
 var (
-	rmq      = conejo.Connect("amqp://guest:guest@rabbitmq:5672")
+	rmq      = conejo.Connect(os.Getenv("RABBITMQ_CONNECTION"))
 	workQueue = make(chan string) 
-	queue    = conejo.Queue{Name: "queue_name", Durable: false, Delete: false, Exclusive: false, NoWait: false}
-	exchange = conejo.Exchange{Name: "exchange_name", Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
+	queue    = conejo.Queue{Name: os.Getenv("RABBITMQ_QUEUE"), Durable: false, Delete: false, Exclusive: false, NoWait: false}
+	exchange = conejo.Exchange{Name: os.Getenv("RABBITMQ_EXCHANGE"), Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 )
 
 /* ----------------------------------------------------------------------------

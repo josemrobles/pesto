@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"io/ioutil"
+	"os"
 )
 
 type Response struct {
@@ -19,15 +20,15 @@ type Response struct {
 const port = ":80"
 
 var (
-	rmq      = conejo.Connect("amqp://guest:guest@rabbitmq:5672")
-	queue    = conejo.Queue{Name: "queue_name", Durable: false, Delete: false, Exclusive: false, NoWait: false}
-	exchange = conejo.Exchange{Name: "exchange_name", Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
+	rmq      = conejo.Connect(os.Getenv("RABBITMQ_CONNECTION"))
+	queue    = conejo.Queue{Name: os.Getenv("RABBITMQ_QUEUE"), Durable: false, Delete: false, Exclusive: false, NoWait: false}
+	exchange = conejo.Exchange{Name: os.Getenv("RABBITMQ_EXCHANGE"), Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 	foobar       string = `{"Success": false,"Message": "Internal server error :(","Data": {"foo": "bar"}}`
 	success      bool   = false
 	responseCode int    = 500
 	message      string
 	data json.RawMessage
-	apiToken     string = "zAZ7EtwfqYxJt8eKBRf9xfs8SQk3F4Hv22Wt29k6nchMDpeknGFhkMQeDhxBDEWS45E3dhkQNKTXqq97qCJeCZzEt3kkBfEPAC5X"
+	apiToken     string = string(os.Getenv("API_TOKEN"))
 )
 
 func main() {

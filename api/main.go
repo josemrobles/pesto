@@ -131,26 +131,26 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	} else {
 
-		// Publish the message
-		err := conejo.Publish(rmq, queue, exchange, string([]byte(b)))
+		// Process the batch / request
+		bID,err := processBatch(b)
 
-		// Check to make sure the there were no errors in publishing
+		// Check for errors 
 		if err != nil {
 
 			// Foobar no wascally wabbits!!
 			success = false
 			responseCode = 500
 			message = "Internal Error :("
-			log.Printf("ERR: Could not publish message - %q", err)
+			log.Printf("ERR: Could not process batch - %q", err)
 
 		} else {
 
 			success = true
 			responseCode = 202 // Accepted
-			data = json.RawMessage(`{"hooty":"hoot"}`)
-			message = "Payload Accepted, check status of the request va the request ID"
+			data = json.RawMessage(`{"hooty":"hoot"}`) // @TODO - proper API response with batch size and bID
+			message = "Payload Accepted, check status of the request ["+bID +"]"
 
-		} // Publish Message
+		}
 
 	} // Read payload
 

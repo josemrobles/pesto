@@ -167,7 +167,7 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	if err != nil {
 
 		// FML
-		log.Printf("_ERR: Could not marshal response - %q", err)
+		log.Printf("ERR: Could not marshal response - %q", err)
 		w.WriteHeader(500)
 		fmt.Fprint(w, foobar)
 

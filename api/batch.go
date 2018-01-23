@@ -3,9 +3,10 @@ package main
 import (
 	"log"
 	"github.com/josemrobles/conejo"
+	"encoding/json"
 )
 
-func processBatch(b []byte) (string ,error) {
+func processBatch(b []byte) (string ,int,error) {
 
 	var err error = nil
 	var errors int = 0
@@ -26,6 +27,25 @@ func processBatch(b []byte) (string ,error) {
 		} // Publish message
 	}
 
-	return "76589878687980897890hh9800", err
+	return "76589878687980897890hh9800", 10,err
 
+}
+
+func JSONify(responseData *ResponseData) (json.RawMessage, error) {
+
+	// Marahal the incoing response
+	b, err := json.Marshal(responseData)
+
+	// Check for an error
+	if err != nil {
+
+		// No bueno
+		return nil, err
+
+	} else {
+
+		// Return the struct in raw json
+		return json.RawMessage(string(b)), nil
+
+	}
 }

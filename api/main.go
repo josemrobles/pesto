@@ -17,6 +17,11 @@ type Response struct {
 	Data    json.RawMessage
 }
 
+type ResponseData struct {
+	BatchID string
+	BatchCount int
+}
+
 const port = ":80"
 
 var (
@@ -132,7 +137,7 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	} else {
 
 		// Process the batch / request
-		bID,err := processBatch(b)
+		bID,bSize,err := processBatch(b)
 
 		// Check for errors 
 		if err != nil {
@@ -145,10 +150,30 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 		} else {
 
-			success = true
-			responseCode = 202 // Accepted
-			data = json.RawMessage(`{"hooty":"hoot"}`) // @TODO - proper API response with batch size and bID
-			message = "Payload Accepted, check status of the request ["+bID +"]"
+
+			responseData := &ResponseData{
+				BatchID: bID,
+				BatchCount: bSize,
+			}
+
+			// JSONify the response data
+			data,err = JSONify(responseData)
+
+			if err != nil {
+
+				// Foobar no wascally wabbits!!
+				success = false
+				responseCode = 500
+				message = "Internal Error :("
+				log.Printf("ERR: Could not process batch - %q", err)
+
+			} else {
+
+				success = true
+				responseCode = 202 // Accepted
+				message = "Payload Accepted, check status of the request ["+bID +"]"
+
+			}
 
 		}
 

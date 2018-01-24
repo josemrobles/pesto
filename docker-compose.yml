@@ -18,6 +18,17 @@ services:
       - BALANCE=roundrobin
 
   ################################################################################
+  # REDI
+  ################################################################################
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    env_file: development.env
+    volumes:
+      - ./data/redis:/data
+
+  ################################################################################
   # RABBITMQ
   ################################################################################
 
@@ -100,8 +111,10 @@ services:
     hostname: "api.pesto.local"
     links:
       - rabbitmq
+      - redis
     depends_on:
       - rabbitmq
+      - redis
     expose:
       - 80
 
@@ -115,5 +128,7 @@ services:
     links:
       - rabbitmq
       - elasticsearch1
+      - redis
     depends_on:
       - api
+      - redis

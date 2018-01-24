@@ -171,7 +171,7 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 				success = true
 				responseCode = 202 // Accepted
-				message = "Payload Accepted, check status of the request ["+bID +"]"
+				message = "Request accepted"
 
 			}
 

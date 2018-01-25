@@ -9,11 +9,30 @@
 		{
 			"name": "Submit Data",
 			"request": {
-				"method": "GET",
-				"header": [],
-				"body": {},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Token",
+						"value": "zAZ7EtwfqYxJt8eKBRf9xfs8SQk3F4Hv22Wt29k6nchMDpeknGFhkMQeDhxBDEWS45E3dhkQNKTXqq97qCJeCZzEt3kkBfEPAC5X"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"fooberus\":\"maximus\"}"
+				},
 				"url": {
-					"raw": ""
+					"raw": "http://api.pesto.local/api/v1/_reindex",
+					"protocol": "http",
+					"host": [
+						"api",
+						"pesto",
+						"local"
+					],
+					"path": [
+						"api",
+						"v1",
+						"_reindex"
+					]
 				},
 				"description": ""
 			},

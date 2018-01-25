@@ -46,6 +46,12 @@ func processBatch(b []byte) (string ,int,error) {
 		// @TODO - Actually iterate through the payload, currently a simulation
 		for i := 0; i < numJobs; i++ {
 
+			// Convert item to string
+			item := strconv.Itoa(i+1)
+
+			// Set the status for the current job 0 = processing 1 = done 2 = error
+			redis.Do("HSET", "stats:job:"+bID,"job:"+item+":status",0)
+
 			// Publish the message
 			err = conejo.Publish(rmq, queue, exchange, string([]byte(b)))
 
@@ -53,14 +59,6 @@ func processBatch(b []byte) (string ,int,error) {
 			if err != nil {
 
 				log.Printf("ERR: Could not publish message %v - %q", i,err)
-
-			} else {
-
-				// Convert item to string
-				item := strconv.Itoa(i+1)
-
-				// Set the status for the current job 0 = processing 1 = done 2 = error
-				redis.Do("HSET", "stats:job:"+bID,"job:"+item+":status",0)
 
 			} // Publish message
 

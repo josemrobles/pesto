@@ -46,7 +46,8 @@ func main() {
 	r.POST("/api/v1", index)
 
 	// API Endpoints (EP)
-	r.POST("/api/v1/_reindex", AuthCheck(reindex))
+	r.POST("/api/v1/reindex", AuthCheck(reindex))
+	r.GET("/api/v1/status/:feed_id", AuthCheck(status))
 
 	// Caralho, it no chooch!
 	log.Fatal(http.ListenAndServe(port, r))
@@ -202,4 +203,12 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.WriteHeader(responseCode)
 		fmt.Fprint(w, string(response))
 	}
+}
+
+func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+
+	feedID := p.ByName("feed_id")
+
+		log.Println(feedID)
+
 }

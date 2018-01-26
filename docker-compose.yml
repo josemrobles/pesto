@@ -18,7 +18,42 @@ services:
       - BALANCE=roundrobin
 
   ################################################################################
-  # REDI
+  # API 
+  ################################################################################
+
+  api:
+    build: api/.
+    environment:
+      - "VIRTUAL_HOST=*/api/*"
+      - "VIRTUAL_HOST_WEIGHT=1"
+    env_file: development.env
+    hostname: "api.pesto.local"
+    links:
+      - rabbitmq
+      - redis
+    depends_on:
+      - rabbitmq
+      - redis
+    expose:
+      - 80
+
+  ################################################################################
+  # WORKER
+  ################################################################################
+
+  worker:
+    build: worker/.
+    env_file: development.env
+    links:
+      - rabbitmq
+      - elasticsearch1
+      - redis
+    depends_on:
+      - api
+      - redis
+
+  ################################################################################
+  # REDIS
   ################################################################################
 
   redis:
@@ -98,37 +133,3 @@ services:
     environment:
       - "ELASTICSEARCH_URL=http://elasticsearch1:9200"
 
-  ################################################################################
-  # API 
-  ################################################################################
-
-  api:
-    build: api/.
-    environment:
-      - "VIRTUAL_HOST=*/api/*"
-      - "VIRTUAL_HOST_WEIGHT=1"
-    env_file: development.env
-    hostname: "api.pesto.local"
-    links:
-      - rabbitmq
-      - redis
-    depends_on:
-      - rabbitmq
-      - redis
-    expose:
-      - 80
-
-  ################################################################################
-  # WORKER
-  ################################################################################
-
-  worker:
-    build: worker/.
-    env_file: development.env
-    links:
-      - rabbitmq
-      - elasticsearch1
-      - redis
-    depends_on:
-      - api
-      - redis

@@ -28,7 +28,7 @@ func processBatch(b []byte) (string ,int,error) {
 	redis,err := redisConn(os.Getenv("REDIS_CONNECTION"))
 
 	// Get new batch ID
-	bID := getBatchID()
+	batchID := getBatchID()
 
 	// Get total number of jobs in batch
 	numJobs := 500
@@ -40,7 +40,7 @@ func processBatch(b []byte) (string ,int,error) {
 	} else {
 
 		// Add new batch to redis
-		redis.Do("SADD", "data:jobs", bID)
+		redis.Do("SADD", "data:jobs", batchID)
 
 		// Iterate through the payload and send each message
 		// @TODO - Actually iterate through the payload, currently a simulation
@@ -50,7 +50,7 @@ func processBatch(b []byte) (string ,int,error) {
 			item := strconv.Itoa(i+1)
 
 			// Set the status for the current job 0 = processing 1 = done 2 = error
-			redis.Do("HSET", "stats:job:"+bID,"job:"+item+":status",0)
+			redis.Do("HSET", "stats:job:"+batchID,"job:"+item+":status",0)
 
 			// Publish the message
 			err = conejo.Publish(rmq, queue, exchange, string([]byte(b)))
@@ -66,7 +66,7 @@ func processBatch(b []byte) (string ,int,error) {
 
 	} // Redis connection
 
-	return bID, numJobs,err
+	return batchID, numJobs,err
 
 }
 

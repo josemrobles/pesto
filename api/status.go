@@ -69,7 +69,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 						Errors:    9999,
 					}
 
-					doof, _ := redisConn.StringMap(redis.Do("HGETALL", "stats:job:"+batchID))
+					doof, _ := redis.Do("HGETALL", "stats:job:"+batchID)
 					log.Println(doof)
 
 					// JSONify the response data

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"github.com/garyburd/redigo/redis"
 	"log"
+	"strconv"
 	"net/http"
 )
 
@@ -13,6 +15,35 @@ type StatusResponseData struct {
 	BatchSize int64
 	Completed int
 	Errors    int
+}
+
+type Job struct {
+    Status   int
+}
+
+func getFailedJobCount(b string)  (fj int){
+
+	c := redisPool.Get()
+	defer c.Close()
+
+	defer func() {
+		c.Close()
+	}()
+
+	//v, err := redis.Values(c.Do("hgetall", "stats:job:"+b))
+	m, err := redis.StringMap(c.Do("hgetall", "stats:job:"+b))
+	if err != nil {
+		log.Printf("ERR: Could not get failed job count - %q", err)
+	}
+
+	for _, v := range m {
+		vi,_ := strconv.Atoi(v)
+		if vi == 2 {
+			fj++
+		}
+	}
+
+    return
 }
 
 func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -60,11 +91,8 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 					BatchID:   batchID,
 					BatchSize: numJobs,
 					Completed: 9999,
-					Errors:    9999,
+					Errors:    getFailedJobCount(batchID),
 				}
-
-				doof, _ := c.Do("HGETALL", "stats:job:"+batchID)
-				log.Println(doof)
 
 				// JSONify the response data
 				data, err = JSONify2(responseData)
@@ -77,6 +105,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 					log.Printf("ERR: Could not jsonify response - %q", err)
 
 				} else {
+
 
 					// batch does exist
 					success = true

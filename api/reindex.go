@@ -9,7 +9,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
@@ -134,47 +133,42 @@ to obtain a granular batch status report.
 func processBatch(b []byte) (string, int, error) {
 
 	var err error = nil
-	redis, err := redisConn(os.Getenv("REDIS_CONNECTION"))
+	c := redisPool.Get()
+
+	defer func() {
+		c.Close()
+	}()
 
 	// Get new batch ID
 	batchID := getBatchID()
 
 	// Get total number of jobs in batch
-	numJobs := 500
+	numJobs := 10
 
-	// Check if we were able to connect to redis
-	if err != nil {
+	// Add new batch to redis
+	c.Do("SADD", "data:jobs", batchID)
 
-		log.Printf("ERR: Could not connect to Redis %q", err)
+	// Iterate through the payload and send each message
+	// @TODO - Actually iterate through the payload, currently a simulation
+	for i := 0; i < numJobs; i++ {
 
-	} else {
+		// Convert item to string
+		item := strconv.Itoa(i + 1)
 
-		// Add new batch to redis
-		redis.Do("SADD", "data:jobs", batchID)
+		// Set the status for the current job 0 = processing 1 = done 2 = error
+		c.Do("HSET", "stats:job:"+batchID, "job:"+item+":status", 0)
 
-		// Iterate through the payload and send each message
-		// @TODO - Actually iterate through the payload, currently a simulation
-		for i := 0; i < numJobs; i++ {
+		// Publish the message
+		err = conejo.Publish(rmq, queue, exchange, string([]byte(b)))
 
-			// Convert item to string
-			item := strconv.Itoa(i + 1)
+		// Check to make sure the there were no errors in publishing
+		if err != nil {
 
-			// Set the status for the current job 0 = processing 1 = done 2 = error
-			redis.Do("HSET", "stats:job:"+batchID, "job:"+item+":status", 0)
+			log.Printf("ERR: Could not publish message %v - %q", i, err)
 
-			// Publish the message
-			err = conejo.Publish(rmq, queue, exchange, string([]byte(b)))
+		} // Publish message
 
-			// Check to make sure the there were no errors in publishing
-			if err != nil {
-
-				log.Printf("ERR: Could not publish message %v - %q", i, err)
-
-			} // Publish message
-
-		} // Iterate
-
-	} // Redis connection
+	} // Iterate
 
 	return batchID, numJobs, err
 

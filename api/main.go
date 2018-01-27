@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/josemrobles/conejo"
 	"github.com/julienschmidt/httprouter"
+	"github.com/garyburd/redigo/redis"
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Response struct {
@@ -28,12 +30,40 @@ var (
 	queue               = conejo.Queue{Name: os.Getenv("RABBITMQ_QUEUE"), Durable: false, Delete: false, Exclusive: false, NoWait: false}
 	exchange            = conejo.Exchange{Name: os.Getenv("RABBITMQ_EXCHANGE"), Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 	foobar       string = `{"Success": false,"Message": "Internal server error :(","Data": {"foo": "bar"}}`
+	redisPool            redis.Pool
 	success      bool   = false
 	responseCode int    = 500
 	message      string
 	data         json.RawMessage
 	apiToken     string = string(os.Getenv("API_TOKEN"))
 )
+
+func init() {
+	var err error = nil
+
+	// Create redis connection pool
+	redisPool, err = initRedisPool(os.Getenv("REDIS_CONNECTION"),10*time.Second)
+
+	// Check to make suer there were no issues in creting pool
+	if err != nil {
+
+		log.Printf("ERR: Could not create redis pool - %q", err)
+
+	}
+	c := redisPool.Get()
+
+	defer func() {
+		c.Close()
+		redisPool.Close()
+	}()
+
+	ret, err := c.Do("SET", "fleet", "truck1", "POINT", "33", "-115")
+	if err != nil {
+		log.Printf("Error is: %s.", err)
+	}
+	log.Printf("%s\n", ret)
+
+}
 
 func main() {
 

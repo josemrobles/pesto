@@ -6,30 +6,21 @@ import (
 	"log"
 )
 
-
-func initRedis(a string, connectTimeout, readTimeout, writeTimeout time.Duration) (redis.Conn, error) {
-	return redis.Dial("tcp", a,
-		redis.DialConnectTimeout(connectTimeout),
-		redis.DialReadTimeout(readTimeout),
-		redis.DialWriteTimeout(writeTimeout))
-}
-
-
 /* ----------------------------------------------------------------------------
 Function used to connect to the redis server...
 
 @TODO - Unit test!!!!!
 -----------------------------------------------------------------------------*/
-func initRedisPool(a string,idleTimeout time.Duration) (redis.Pool, error) {
+func initRedisPool(a string) *redis.Pool {
 
 	// INitialize the Redis pool
-	p := redis.Pool{
-		MaxIdle:     10,
-		IdleTimeout: idleTimeout,
+	return &redis.Pool{
+		MaxIdle:     5,
+		IdleTimeout: 120*time.Second,
 		Dial: func() (redis.Conn, error) {
 
 			// Connect to Redis
-			c, err := initRedis(a,10*time.Second ,10*time.Second ,10*time.Second)
+			c, err := redis.Dial("tcp", a)
 
 			// Check if we were able to connect
 			if err != nil {
@@ -37,8 +28,6 @@ func initRedisPool(a string,idleTimeout time.Duration) (redis.Pool, error) {
 				log.Printf("ERR: Unable to connect to redis server - %q",err)
 				return nil, err
 
-			} else {
-				log.Println("OOF: CARALHO!!!!!!!!!!!!!!!!!!!!!!!!!")
 			}
 			return c, err
 		},
@@ -47,5 +36,4 @@ func initRedisPool(a string,idleTimeout time.Duration) (redis.Pool, error) {
 			return err
 		},
 	}
-	return p, nil
 }

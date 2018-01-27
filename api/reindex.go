@@ -134,10 +134,7 @@ func processBatch(b []byte) (string, int, error) {
 
 	var err error = nil
 	c := redisPool.Get()
-
-	defer func() {
-		c.Close()
-	}()
+	defer c.Close()
 
 	// Get new batch ID
 	batchID := getBatchID()

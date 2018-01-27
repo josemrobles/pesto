@@ -21,6 +21,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var data json.RawMessage
 	batchID := p.ByName("batch_id")
 	c := redisPool.Get()
+	defer c.Close()
 
 	defer func() {
 		c.Close()

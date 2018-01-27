@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/josemrobles/conejo"
 	"github.com/julienschmidt/httprouter"
+	"github.com/garyburd/redigo/redis"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +29,7 @@ var (
 	queue               = conejo.Queue{Name: os.Getenv("RABBITMQ_QUEUE"), Durable: false, Delete: false, Exclusive: false, NoWait: false}
 	exchange            = conejo.Exchange{Name: os.Getenv("RABBITMQ_EXCHANGE"), Type: "topic", Durable: true, AutoDeleted: false, Internal: false, NoWait: false}
 	foobar       string = `{"Success": false,"Message": "Internal server error :(","Data": {"foo": "bar"}}`
+	redisPool            *redis.Pool
 	success      bool   = false
 	responseCode int    = 500
 	message      string
@@ -36,6 +38,8 @@ var (
 )
 
 func main() {
+
+	redisPool = initRedisPool(os.Getenv("REDIS_CONNECTION"))
 
 	// Release the routher!!!
 	r := httprouter.New()

@@ -6,7 +6,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
-	"os"
 )
 
 type StatusResponseData struct {
@@ -21,90 +20,83 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error = nil
 	var data json.RawMessage
 	batchID := p.ByName("batch_id")
-	redis, err := redisConn(os.Getenv("REDIS_CONNECTION"))
+	c := redisPool.Get()
+	defer c.Close()
 
-	// Verify that redis connection was made
+	defer func() {
+		c.Close()
+	}()
+
+	check, err := c.Do("SISMEMBER", "data:jobs", batchID)
+
+	// Make sure there was no error in checking for the job
 	if err != nil {
 
 		success = false
 		responseCode = 500
 		message = "Internal Error :("
-		log.Printf("ERR: Could not connect to Redis %q", err)
+		log.Printf("ERR: Could not check Redis for job - %q", err)
 
 	} else {
 
-		check, err := redis.Do("SISMEMBER", "data:jobs", batchID)
+		if check == int64(1) {
 
-		// Make sure there was no error in checking for the job
-		if err != nil {
+			// GEt the number of jobs in the batch
+			nj, err := c.Do("HLEN", "stats:job:"+batchID)
 
-			success = false
-			responseCode = 500
-			message = "Internal Error :("
-			log.Printf("ERR: Could not check Redis for job - %q", err)
+			// Check if job pop inquiry failed
+			if err != nil {
 
-		} else {
+				success = false
+				responseCode = 500
+				message = "Internal Error :("
+				log.Printf("ERR: Could not check job count for batch - %q", err)
 
-			if check == int64(1) {
+			} else {
 
-				// GEt the number of jobs in the batch
-				nj, err := redis.Do("HLEN", "stats:job:"+batchID)
+				numJobs := nj.(int64)
 
-				// Check if job pop inquiry failed
+				responseData := &StatusResponseData{
+					BatchID:   batchID,
+					BatchSize: numJobs,
+					Completed: 9999,
+					Errors:    9999,
+				}
+
+				doof, _ := c.Do("HGETALL", "stats:job:"+batchID)
+				log.Println(doof)
+
+				// JSONify the response data
+				data, err = JSONify2(responseData)
+
 				if err != nil {
 
 					success = false
 					responseCode = 500
 					message = "Internal Error :("
-					log.Printf("ERR: Could not check job count for batch - %q", err)
+					log.Printf("ERR: Could not jsonify response - %q", err)
 
 				} else {
 
-					numJobs := nj.(int64)
+					// batch does exist
+					success = true
+					responseCode = 200
+					message = "Batch found" // @TODO - Better message i.e. in progress, errors, completed, etc
 
-					responseData := &StatusResponseData{
-						BatchID:   batchID,
-						BatchSize: numJobs,
-						Completed: 9999,
-						Errors:    9999,
-					}
+				} // JSONify response
 
-					doof, _ := redis.Do("HGETALL", "stats:job:"+batchID)
-					log.Println(doof)
+			} // Job count check
 
-					// JSONify the response data
-					data, err = JSONify2(responseData)
+		} else {
 
-					if err != nil {
+			// batch does not exist
+			success = false
+			responseCode = 204
+			message = "Batch not found"
 
-						success = false
-						responseCode = 500
-						message = "Internal Error :("
-						log.Printf("ERR: Could not jsonify response - %q", err)
+		} // Batch check
 
-					} else {
-
-						// batch does exist
-						success = true
-						responseCode = 200
-						message = "Batch found" // @TODO - Better message i.e. in progress, errors, completed, etc
-
-					} // JSONify response
-
-				} // Job count check
-
-			} else {
-
-				// batch does not exist
-				success = false
-				responseCode = 204
-				message = "Batch not found"
-
-			} // Batch check
-
-		} // job check in redis
-
-	} // Redis connect
+	} // job check in redis
 
 	// By this point we should have some sort of response
 	resp := &Response{Success: success, Message: message, Data: data}

@@ -17,10 +17,6 @@ type StatusResponseData struct {
 	Errors    int
 }
 
-type Job struct {
-    Status   int
-}
-
 func getFailedJobCount(b string)  (fj int){
 
 	c := redisPool.Get()
@@ -40,6 +36,30 @@ func getFailedJobCount(b string)  (fj int){
 		vi,_ := strconv.Atoi(v)
 		if vi == 2 {
 			fj++
+		}
+	}
+
+    return
+}
+
+func getCompletedJobCount(b string)  (cj int){
+
+	c := redisPool.Get()
+	defer c.Close()
+
+	defer func() {
+		c.Close()
+	}()
+
+	m, err := redis.StringMap(c.Do("hgetall", "stats:job:"+b))
+	if err != nil {
+		log.Printf("ERR: Could not get failed job count - %q", err)
+	}
+
+	for _, v := range m {
+		vi,_ := strconv.Atoi(v)
+		if vi == 1 {
+			cj++
 		}
 	}
 
@@ -90,7 +110,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				responseData := &StatusResponseData{
 					BatchID:   batchID,
 					BatchSize: numJobs,
-					Completed: 9999,
+					Completed: getCompletedJobCount(batchID),
 					Errors:    getFailedJobCount(batchID),
 				}
 

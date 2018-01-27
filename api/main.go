@@ -17,7 +17,7 @@ type Response struct {
 }
 
 type ResponseData struct {
-	BatchID string
+	BatchID    string
 	BatchCount int
 }
 
@@ -113,4 +113,44 @@ func AuthCheck(h httprouter.Handle) httprouter.Handle {
 		} // Token check
 
 	} // Nameless function
+}
+
+// @TODO - CONSOLIDATE!!!
+func JSONify(responseData *ResponseData) (json.RawMessage, error) {
+
+	// Marahal the incoing response
+	b, err := json.Marshal(responseData)
+
+	// Check for an error
+	if err != nil {
+
+		// No bueno
+		return nil, err
+
+	} else {
+
+		// Return the struct in raw json
+		return json.RawMessage(string(b)), nil
+
+	}
+}
+
+// @TODO - CONSOLIDATE!!!
+func JSONify2(responseData *StatusResponseData) (json.RawMessage, error) {
+
+	// Marahal the incoing response
+	b, err := json.Marshal(responseData)
+
+	// Check for an error
+	if err != nil {
+
+		// No bueno
+		return nil, err
+
+	} else {
+
+		// Return the struct in raw json
+		return json.RawMessage(string(b)), nil
+
+	}
 }

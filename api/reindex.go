@@ -2,11 +2,16 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/julienschmidt/httprouter"
-	"net/http"
 	"fmt"
+	"github.com/josemrobles/conejo"
+	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"log"
+	"math/rand"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
 )
 
 /* ----------------------------------------------------------------------------
@@ -31,9 +36,9 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	} else {
 
 		// Process the batch / request
-		bID,bSize,err := processBatch(b)
+		batchID, batchSize, err := processBatch(b)
 
-		// Check for errors 
+		// Check for errors
 		if err != nil {
 
 			// Foobar no wascally wabbits!!
@@ -44,14 +49,13 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 		} else {
 
-
 			responseData := &ResponseData{
-				BatchID: bID,
-				BatchCount: bSize,
+				BatchID:    batchID,
+				BatchCount: batchSize,
 			}
 
 			// JSONify the response data
-			data,err = JSONify(responseData)
+			data, err = JSONify(responseData)
 
 			if err != nil {
 
@@ -67,9 +71,9 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				responseCode = 202 // Accepted
 				message = "Request accepted"
 
-			}
+			} // JSONification
 
-		}
+		} // processBatch()
 
 	} // Read payload
 
@@ -96,4 +100,82 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.WriteHeader(responseCode)
 		fmt.Fprint(w, string(response))
 	}
+}
+
+/* ----------------------------------------------------------------------------
+Used to generate the unique batch ID that can be used to lookup the status of
+the batch / job via the /status API endpoint.
+
+@TODO - Unit test!!!!!
+@TODO - Make the hash length configurable? via func param?
+-----------------------------------------------------------------------------*/
+func getBatchID() string {
+
+	rand.Seed(time.Now().UnixNano())
+	var letterRunes = []rune("12345678abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	b := make([]rune, 50)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
+/* ----------------------------------------------------------------------------
+Function used to process the incoming payload. This func will iterate through
+the payload and break it up into individual jobs which can be tracked individually
+to obtain a granular batch status report.
+
+@TODO - Unit test!!!!!
+@TODO - Actually iterate through the batch
+@TODO - Add the individual payload to the redis hash
+@TODO - Should I create the batch before or after I publish the payload(s)?
+-----------------------------------------------------------------------------*/
+func processBatch(b []byte) (string, int, error) {
+
+	var err error = nil
+	redis, err := redisConn(os.Getenv("REDIS_CONNECTION"))
+
+	// Get new batch ID
+	batchID := getBatchID()
+
+	// Get total number of jobs in batch
+	numJobs := 500
+
+	// Check if we were able to connect to redis
+	if err != nil {
+
+		log.Printf("ERR: Could not connect to Redis %q", err)
+
+	} else {
+
+		// Add new batch to redis
+		redis.Do("SADD", "data:jobs", batchID)
+
+		// Iterate through the payload and send each message
+		// @TODO - Actually iterate through the payload, currently a simulation
+		for i := 0; i < numJobs; i++ {
+
+			// Convert item to string
+			item := strconv.Itoa(i + 1)
+
+			// Set the status for the current job 0 = processing 1 = done 2 = error
+			redis.Do("HSET", "stats:job:"+batchID, "job:"+item+":status", 0)
+
+			// Publish the message
+			err = conejo.Publish(rmq, queue, exchange, string([]byte(b)))
+
+			// Check to make sure the there were no errors in publishing
+			if err != nil {
+
+				log.Printf("ERR: Could not publish message %v - %q", i, err)
+
+			} // Publish message
+
+		} // Iterate
+
+	} // Redis connection
+
+	return batchID, numJobs, err
+
 }

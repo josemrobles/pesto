@@ -22,6 +22,7 @@ type ResponseData struct {
 	BatchCount int
 }
 
+// Port which the API will listen on.
 const port = ":80"
 
 var (
@@ -140,7 +141,7 @@ func JSONify(responseData *ResponseData) (json.RawMessage, error) {
 }
 
 // @TODO - CONSOLIDATE!!!
-func JSONify2(responseData *StatusResponseData) (json.RawMessage, error) {
+func JSONify2(responseData *Status) (json.RawMessage, error) {
 
 	// Marahal the incoing response
 	b, err := json.Marshal(responseData)

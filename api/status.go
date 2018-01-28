@@ -10,15 +10,23 @@ import (
 	"net/http"
 )
 
-type StatusResponseData struct {
+type Status struct {
 	BatchID   string
 	BatchSize int64
 	Completed int
 	Errors    int
 }
 
-func getFailedJobCount(b string)  (fj int){
+/* ----------------------------------------------------------------------------
+Function used to obtain the sum of a specified status for a specified batch.
+Statuses include 0 = in progress, 1 =  done, 2 = error.
 
+@TODO - Unit test!!!!!
+@TODO - better error handling
+-----------------------------------------------------------------------------*/
+func getCountByStatus(b string,s int)  (r int){
+
+	// Grab redis connection from redis pool
 	c := redisPool.Get()
 	defer c.Close()
 
@@ -26,42 +34,29 @@ func getFailedJobCount(b string)  (fj int){
 		c.Close()
 	}()
 
-	//v, err := redis.Values(c.Do("hgetall", "stats:job:"+b))
+	// Get all jobs for the specified batch
 	m, err := redis.StringMap(c.Do("hgetall", "stats:job:"+b))
+
+	// Check to make sure we are able to get the data
 	if err != nil {
+
 		log.Printf("ERR: Could not get failed job count - %q", err)
-	}
 
-	for _, v := range m {
-		vi,_ := strconv.Atoi(v)
-		if vi == 2 {
-			fj++
-		}
-	}
+	}  else {
 
-    return
-}
+		// Iterate through the has and count the number of hits.
+		for _, v := range m {
 
-func getCompletedJobCount(b string)  (cj int){
+			// Convert the value to int for comparison
+			vi,_ := strconv.Atoi(v)
 
-	c := redisPool.Get()
-	defer c.Close()
+			if vi == s {
+				r++
+			} // If
 
-	defer func() {
-		c.Close()
-	}()
+		} // Loop
 
-	m, err := redis.StringMap(c.Do("hgetall", "stats:job:"+b))
-	if err != nil {
-		log.Printf("ERR: Could not get failed job count - %q", err)
-	}
-
-	for _, v := range m {
-		vi,_ := strconv.Atoi(v)
-		if vi == 1 {
-			cj++
-		}
-	}
+	} // Check
 
     return
 }
@@ -107,15 +102,15 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 				numJobs := nj.(int64)
 
-				responseData := &StatusResponseData{
+				status := &Status{
 					BatchID:   batchID,
 					BatchSize: numJobs,
-					Completed: getCompletedJobCount(batchID),
-					Errors:    getFailedJobCount(batchID),
+					Completed: getCountByStatus(batchID,1),
+					Errors:    getCountByStatus(batchID,2),
 				}
 
 				// JSONify the response data
-				data, err = JSONify2(responseData)
+				data, err = JSONify2(status)
 
 				if err != nil {
 

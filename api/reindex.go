@@ -54,7 +54,7 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			}
 
 			// JSONify the response data
-			data, err = JSONify(responseData)
+			d, err := json.Marshal(responseData)
 
 			if err != nil {
 
@@ -69,6 +69,7 @@ func reindex(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				success = true
 				responseCode = 202 // Accepted
 				message = "Request accepted"
+				data = json.RawMessage(string(d))
 
 			} // JSONification
 

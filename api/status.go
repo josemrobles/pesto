@@ -121,7 +121,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 				}
 
 				// JSONify the response data
-				data, err = JSONify2(status)
+				d, err := json.Marshal(status)
 
 				if err != nil {
 
@@ -136,6 +136,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 					success = true
 					responseCode = 200
 					message = "Batch found" // @TODO - Better message i.e. in progress, errors, completed, etc
+					data = json.RawMessage(string(d))
 
 				} // JSONify response
 

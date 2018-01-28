@@ -61,11 +61,20 @@ func getCountByStatus(b string,s int)  (r int){
     return
 }
 
+/* ----------------------------------------------------------------------------
+Function used to fetch the status of a particular job. The reponse is a summary
+without details on the failure, only the sum of completed and failures.
+
+@TODO - Unit test!!!!!
+@TODO - better error handling
+-----------------------------------------------------------------------------*/
 func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	var err error = nil
 	var data json.RawMessage
 	batchID := p.ByName("batch_id")
+
+	// Grab redis connection from redis pool
 	c := redisPool.Get()
 	defer c.Close()
 
@@ -73,6 +82,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		c.Close()
 	}()
 
+	// Chec to make sure we're working with a valid batch
 	check, err := c.Do("SISMEMBER", "data:jobs", batchID)
 
 	// Make sure there was no error in checking for the job
@@ -85,6 +95,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	} else {
 
+		// Check for job
 		if check == int64(1) {
 
 			// GEt the number of jobs in the batch
@@ -121,7 +132,6 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 				} else {
 
-
 					// batch does exist
 					success = true
 					responseCode = 200
@@ -135,7 +145,7 @@ func status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 			// batch does not exist
 			success = false
-			responseCode = 204
+			responseCode = 200
 			message = "Batch not found"
 
 		} // Batch check

@@ -7,7 +7,8 @@ import (
 )
 
 /* ----------------------------------------------------------------------------
-Function used to connect to the redis server...
+Function used to create a redis pool that can be used by other functions to get
+a connection to the redis server.
 
 @TODO - Unit test!!!!!
 -----------------------------------------------------------------------------*/

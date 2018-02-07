@@ -14,7 +14,9 @@ import (
 )
 
 /* ----------------------------------------------------------------------------
-Function used to reindex a single item.
+Function used to reindex items via batch. Allthought all of the work is submitted
+via batch, everything is processed individually, but concurrently via the use
+of rabbitmq and goroutines. 
 
 @TODO - Unit test!!!!!
 -----------------------------------------------------------------------------*/

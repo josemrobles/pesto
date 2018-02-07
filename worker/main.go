@@ -16,7 +16,9 @@ var (
 
 /* ----------------------------------------------------------------------------
 Init func launches the goroutines which do the concurrent processing of the
-messages which are received via wabbitMQ.
+messages which are received via wabbitMQ. The number of goroutnes is determined
+by the number of CPU's for the host / container. This allows for maximum efficiency
+and makse sure the host is fully utilized. 
 -----------------------------------------------------------------------------*/
 func init() {
 
